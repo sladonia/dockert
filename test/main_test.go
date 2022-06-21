@@ -61,6 +61,30 @@ func (s *Suite) TestRedis() {
 
 	err = c.WaitReady(ctx)
 	s.Require().NoError(err)
+
+	err = c.Stop()
+	s.Require().NoError(err)
+}
+
+func (s *Suite) TestNats() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	c := container.NewNats()
+
+	err := c.Run(s.pool)
+	s.Require().NoError(err)
+
+	dsn := c.DSN()
+
+	_, err = url.Parse(dsn)
+	s.Require().NoError(err)
+
+	err = c.WaitReady(ctx)
+	s.Require().NoError(err)
+
+	err = c.Stop()
+	s.Require().NoError(err)
 }
 
 func TestSuite(t *testing.T) {
