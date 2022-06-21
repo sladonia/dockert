@@ -12,19 +12,20 @@ type Container interface {
 	Name() string
 	DSN() string
 	Run(pool *dockertest.Pool) error
+	Stop() error
 	WaitReady(ctx context.Context) error
 	IsReady() bool
 	DependsOn(other Container) Container
 	Resource() *dockertest.Resource
 }
 
-type ReadinessWaiter interface {
-	Wait(ctx context.Context, self Container) error
+type ReadinessChecker interface {
+	IsReady(ctx context.Context, self Container) (bool, error)
 }
 
-type ReadinessWaiterFunc func(ctx context.Context, self Container) error
+type ReadinessCheckerFunc func(ctx context.Context, self Container) (bool, error)
 
-func (f ReadinessWaiterFunc) Wait(ctx context.Context, self Container) error {
+func (f ReadinessCheckerFunc) IsReady(ctx context.Context, self Container) (bool, error) {
 	return f(ctx, self)
 }
 
@@ -36,13 +37,13 @@ type commonContainer struct {
 	resource        *dockertest.Resource
 	dependsOn       []Container
 	isReady         bool
-	readinessWaiter ReadinessWaiter
+	readinessWaiter ReadinessChecker
 }
 
 func NewCommonContainer(
 	urlScheme, defaultPort string,
 	options *dockertest.RunOptions,
-	readinessWaiter ReadinessWaiter,
+	readinessWaiter ReadinessChecker,
 ) Container {
 	return &commonContainer{
 		urlScheme:       urlScheme,
@@ -91,9 +92,36 @@ func (c *commonContainer) Run(pool *dockertest.Pool) error {
 }
 
 func (c *commonContainer) WaitReady(ctx context.Context) error {
+	err := c.waitForOtherContainers(ctx)
+	if err != nil {
+		return err
+	}
+
 	t := time.NewTimer(0)
 
-	// wait for
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-t.C:
+			ok, err := c.readinessWaiter.IsReady(ctx, c)
+			if err != nil {
+				return err
+			}
+
+			if !ok {
+				t.Reset(100 * time.Millisecond)
+				continue
+			}
+
+			return nil
+		}
+	}
+}
+
+func (c *commonContainer) waitForOtherContainers(ctx context.Context) error {
+	t := time.NewTimer(0)
+
 timerLoop:
 	for {
 		select {
@@ -107,11 +135,9 @@ timerLoop:
 				}
 			}
 
-			break timerLoop
+			return nil
 		}
 	}
-
-	return c.readinessWaiter.Wait(ctx, c)
 }
 
 func (c *commonContainer) DependsOn(other Container) Container {
@@ -125,4 +151,8 @@ func (c *commonContainer) Resource() *dockertest.Resource {
 
 func (c *commonContainer) IsReady() bool {
 	return c.isReady
+}
+
+func (c *commonContainer) Stop() error {
+	return c.resource.Close()
 }
