@@ -59,12 +59,18 @@ func (c *commonContainer) Name() string {
 }
 
 func (c *commonContainer) DSN() string {
-	addr := c.resource.GetPort(c.defaultPort)
+	var addr string
+
+	port := c.resource.GetPort(c.defaultPort)
 
 	if IsDarwinOS() && IsRunningInDockerContainer() {
-		addr = fmt.Sprintf("127.0.0.1:%s", addr)
+		addr = fmt.Sprintf("127.0.0.1:%s", port)
 	} else {
-		addr = fmt.Sprintf("%s:%s", c.resource.Container.NetworkSettings.Gateway, addr)
+		addr = fmt.Sprintf("%s:%s", c.resource.Container.NetworkSettings.Gateway, port)
+	}
+
+	if c.urlScheme == "" {
+		return addr
 	}
 
 	return fmt.Sprintf("%s://%s", c.urlScheme, addr)
