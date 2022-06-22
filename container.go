@@ -11,7 +11,7 @@ import (
 type Container interface {
 	Name() string
 	DSN() string
-	Run(pool *dockertest.Pool) error
+	Start(pool *dockertest.Pool) error
 	Stop() error
 	WaitReady(ctx context.Context) error
 	IsReady() bool
@@ -76,7 +76,7 @@ func (c *commonContainer) DSN() string {
 	return fmt.Sprintf("%s://%s", c.urlScheme, addr)
 }
 
-func (c *commonContainer) Run(pool *dockertest.Pool) error {
+func (c *commonContainer) Start(pool *dockertest.Pool) error {
 	var err error
 
 	resource, ok := pool.ContainerByName(c.name)
