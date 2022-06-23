@@ -134,6 +134,21 @@ func (s *Suite) TestRegistry() {
 	s.Require().NoError(err)
 }
 
+func (s *Suite) TestNSQD() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	c := container.NewNSQD()
+	err := c.Start(s.pool)
+	s.Require().NoError(err)
+
+	err = c.WaitReady(ctx)
+	s.Require().NoError(err)
+
+	err = c.Stop()
+	s.Require().NoError(err)
+}
+
 func TestSuite(t *testing.T) {
 	suite.Run(t, &Suite{})
 }
