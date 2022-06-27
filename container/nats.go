@@ -8,10 +8,12 @@ import (
 	"github.com/sladonia/docker"
 )
 
+const (
+	PortNats = "4222"
+)
+
 func NewNats() docker.Container {
 	return docker.NewCommonContainer(
-		"nats",
-		"4222/tcp",
 		&dockertest.RunOptions{
 			Name:       "nats",
 			Repository: "nats",
@@ -19,7 +21,7 @@ func NewNats() docker.Container {
 			Cmd:        []string{"nats-server", "-js"},
 		},
 		docker.ReadinessCheckerFunc(func(ctx context.Context, c docker.Container) (bool, error) {
-			conn, err := nats.Connect(c.DSN())
+			conn, err := nats.Connect(NatsDSN(c))
 			if err != nil {
 				return false, nil
 			}
@@ -29,4 +31,8 @@ func NewNats() docker.Container {
 			return true, nil
 		}),
 	)
+}
+
+func NatsDSN(c docker.Container) string {
+	return c.Address("nats", PortNats)
 }

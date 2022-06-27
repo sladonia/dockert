@@ -9,17 +9,19 @@ import (
 	"github.com/sladonia/docker"
 )
 
+const (
+	PortRedis = "6379"
+)
+
 func NewRedis() docker.Container {
 	return docker.NewCommonContainer(
-		"",
-		"6379/tcp",
 		&dockertest.RunOptions{
 			Name:       "redis",
 			Repository: "redis",
 			Tag:        "7-alpine",
 		},
 		docker.ReadinessCheckerFunc(func(ctx context.Context, c docker.Container) (bool, error) {
-			clientOptions := &redis.Options{Addr: c.DSN()}
+			clientOptions := &redis.Options{Addr: RedisDSN(c)}
 
 			client := redis.NewClient(clientOptions)
 
@@ -37,4 +39,8 @@ func NewRedis() docker.Container {
 			return true, nil
 		}),
 	)
+}
+
+func RedisDSN(c docker.Container) string {
+	return c.Address("", PortRedis)
 }

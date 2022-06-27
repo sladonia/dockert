@@ -43,12 +43,19 @@ func (s *Suite) TestMongo() {
 	err := c.Start(s.pool)
 	s.Require().NoError(err)
 
-	dsn := c.DSN()
+	dsn := container.MongoDSN(c)
 
 	_, err = url.Parse(dsn)
 	s.Require().NoError(err)
 
 	err = c.WaitReady(ctx)
+	s.Require().NoError(err)
+
+	clientOptions := options.Client().ApplyURI(dsn)
+	client, err := mongo.Connect(ctx, clientOptions)
+	s.Require().NoError(err)
+
+	err = client.Ping(ctx, nil)
 	s.Require().NoError(err)
 
 	err = c.Stop()
@@ -67,6 +74,12 @@ func (s *Suite) TestRedis() {
 	err = c.WaitReady(ctx)
 	s.Require().NoError(err)
 
+	clientOptions := &redis.Options{Addr: container.RedisDSN(c)}
+	client := redis.NewClient(clientOptions)
+
+	_, err = client.Ping(ctx).Result()
+	s.Require().NoError(err)
+
 	err = c.Stop()
 	s.Require().NoError(err)
 }
@@ -80,12 +93,15 @@ func (s *Suite) TestNats() {
 	err := c.Start(s.pool)
 	s.Require().NoError(err)
 
-	dsn := c.DSN()
+	dsn := container.NatsDSN(c)
 
 	_, err = url.Parse(dsn)
 	s.Require().NoError(err)
 
 	err = c.WaitReady(ctx)
+	s.Require().NoError(err)
+
+	_, err = nats.Connect(dsn)
 	s.Require().NoError(err)
 
 	err = c.Stop()
@@ -108,7 +124,7 @@ func (s *Suite) TestRegistry() {
 	mongoContainer, ok := r.ByName("mongo")
 	s.Require().True(ok)
 
-	clientOptions := options.Client().ApplyURI(mongoContainer.DSN())
+	clientOptions := options.Client().ApplyURI(container.MongoDSN(mongoContainer))
 	client, err := mongo.Connect(ctx, clientOptions)
 	s.Require().NoError(err)
 	err = client.Ping(ctx, nil)
@@ -118,7 +134,7 @@ func (s *Suite) TestRegistry() {
 	redisContainer, ok := r.ByName("redis")
 	s.Require().NoError(err)
 
-	redisClientOptions := &redis.Options{Addr: redisContainer.DSN()}
+	redisClientOptions := &redis.Options{Addr: container.RedisDSN(redisContainer)}
 	redisClient := redis.NewClient(redisClientOptions)
 	_, err = redisClient.Ping(ctx).Result()
 	s.Require().NoError(err)
@@ -127,25 +143,10 @@ func (s *Suite) TestRegistry() {
 	natsContainer, ok := r.ByName("nats")
 	s.Require().NoError(err)
 
-	_, err = nats.Connect(natsContainer.DSN())
+	_, err = nats.Connect(container.NatsDSN(natsContainer))
 	s.Require().NoError(err)
 
 	err = r.Stop()
-	s.Require().NoError(err)
-}
-
-func (s *Suite) TestNSQD() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	c := container.NewNSQD()
-	err := c.Start(s.pool)
-	s.Require().NoError(err)
-
-	err = c.WaitReady(ctx)
-	s.Require().NoError(err)
-
-	err = c.Stop()
 	s.Require().NoError(err)
 }
 

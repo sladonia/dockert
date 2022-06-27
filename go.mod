@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/go-redis/redis/v9 v9.0.0-beta.1
 	github.com/nats-io/nats.go v1.16.0
-	github.com/nsqio/go-nsq v1.1.0
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/stretchr/testify v1.7.4
 	go.mongodb.org/mongo-driver v1.9.1

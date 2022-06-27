@@ -10,7 +10,7 @@ import (
 
 type Container interface {
 	Name() string
-	DSN() string
+	Address(scheme string, port string) string
 	Start(pool *dockertest.Pool) error
 	Stop() error
 	WaitReady(ctx context.Context) error
@@ -23,15 +23,13 @@ type ReadinessChecker interface {
 	IsReady(ctx context.Context, self Container) (bool, error)
 }
 
-type ReadinessCheckerFunc func(ctx context.Context, self Container) (bool, error)
+type ReadinessCheckerFunc func(ctx context.Context, c Container) (bool, error)
 
-func (f ReadinessCheckerFunc) IsReady(ctx context.Context, self Container) (bool, error) {
-	return f(ctx, self)
+func (f ReadinessCheckerFunc) IsReady(ctx context.Context, c Container) (bool, error) {
+	return f(ctx, c)
 }
 
 type commonContainer struct {
-	urlScheme       string
-	defaultPort     string
 	name            string
 	options         *dockertest.RunOptions
 	resource        *dockertest.Resource
@@ -41,13 +39,10 @@ type commonContainer struct {
 }
 
 func NewCommonContainer(
-	urlScheme, defaultPort string,
 	options *dockertest.RunOptions,
 	readinessWaiter ReadinessChecker,
 ) Container {
 	return &commonContainer{
-		urlScheme:       urlScheme,
-		defaultPort:     defaultPort,
 		name:            options.Name,
 		options:         options,
 		readinessWaiter: readinessWaiter,
@@ -58,22 +53,22 @@ func (c *commonContainer) Name() string {
 	return c.name
 }
 
-func (c *commonContainer) DSN() string {
+func (c *commonContainer) Address(scheme, port string) string {
 	var addr string
 
-	port := c.resource.GetPort(c.defaultPort)
+	containerPort := c.resource.GetPort(fmt.Sprintf("%s/tcp", port))
 
 	if IsDarwinOS() && IsRunningInDockerContainer() {
-		addr = fmt.Sprintf("127.0.0.1:%s", port)
+		addr = fmt.Sprintf("127.0.0.1:%s", containerPort)
 	} else {
-		addr = fmt.Sprintf("%s:%s", c.resource.Container.NetworkSettings.Gateway, port)
+		addr = fmt.Sprintf("%s:%s", c.resource.Container.NetworkSettings.Gateway, containerPort)
 	}
 
-	if c.urlScheme == "" {
+	if scheme == "" {
 		return addr
 	}
 
-	return fmt.Sprintf("%s://%s", c.urlScheme, addr)
+	return fmt.Sprintf("%s://%s", scheme, addr)
 }
 
 func (c *commonContainer) Start(pool *dockertest.Pool) error {
@@ -120,6 +115,7 @@ func (c *commonContainer) WaitReady(ctx context.Context) error {
 				continue
 			}
 
+			c.isReady = true
 			return nil
 		}
 	}
