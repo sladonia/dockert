@@ -40,7 +40,7 @@ func (s *Suite) TestMongo() {
 
 	c := container.NewMongo()
 
-	err := c.Start(s.pool)
+	err := c.Start(ctx, s.pool)
 	s.Require().NoError(err)
 
 	dsn := container.MongoDSN(c)
@@ -68,7 +68,7 @@ func (s *Suite) TestRedis() {
 
 	c := container.NewRedis()
 
-	err := c.Start(s.pool)
+	err := c.Start(ctx, s.pool)
 	s.Require().NoError(err)
 
 	err = c.WaitReady(ctx)
@@ -90,7 +90,7 @@ func (s *Suite) TestNats() {
 
 	c := container.NewNats()
 
-	err := c.Start(s.pool)
+	err := c.Start(ctx, s.pool)
 	s.Require().NoError(err)
 
 	dsn := container.NatsDSN(c)

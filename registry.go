@@ -49,7 +49,7 @@ func (r *Registry) StartAndWaitReady(ctx context.Context) error {
 	for _, container := range r.containers {
 		container := container
 		g.Go(func() error {
-			err := container.Start(r.pool)
+			err := container.Start(ctx, r.pool)
 			if err != nil {
 				return err
 			}

@@ -11,7 +11,7 @@ import (
 type Container interface {
 	Name() string
 	Address(scheme string, port string) string
-	Start(pool *dockertest.Pool) error
+	Start(ctx context.Context, pool *dockertest.Pool) error
 	Stop() error
 	WaitReady(ctx context.Context) error
 	IsReady() bool
@@ -71,8 +71,11 @@ func (c *commonContainer) Address(scheme, port string) string {
 	return fmt.Sprintf("%s://%s", scheme, addr)
 }
 
-func (c *commonContainer) Start(pool *dockertest.Pool) error {
-	var err error
+func (c *commonContainer) Start(ctx context.Context, pool *dockertest.Pool) error {
+	err := c.waitForOtherContainers(ctx)
+	if err != nil {
+		return err
+	}
 
 	resource, ok := pool.ContainerByName(c.name)
 	if ok {
@@ -93,11 +96,6 @@ func (c *commonContainer) Start(pool *dockertest.Pool) error {
 }
 
 func (c *commonContainer) WaitReady(ctx context.Context) error {
-	err := c.waitForOtherContainers(ctx)
-	if err != nil {
-		return err
-	}
-
 	t := time.NewTimer(0)
 
 	for {
