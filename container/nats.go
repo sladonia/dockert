@@ -5,7 +5,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/ory/dockertest/v3"
-	"github.com/sladonia/docker"
+	docker "github.com/sladonia/dockert"
 )
 
 const (

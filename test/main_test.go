@@ -9,8 +9,8 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/nats-io/nats.go"
 	"github.com/ory/dockertest/v3"
-	"github.com/sladonia/docker"
-	"github.com/sladonia/docker/container"
+	docker "github.com/sladonia/dockert"
+	"github.com/sladonia/dockert/container"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -147,6 +147,34 @@ func (s *Suite) TestRegistry() {
 	s.Require().NoError(err)
 
 	err = r.Stop()
+	s.Require().NoError(err)
+}
+
+func (s *Suite) TestWaitForAnother() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	mongoContainer := container.NewMongo()
+	redisContainer := container.NewRedis()
+
+	mongoContainer = mongoContainer.DependsOn(redisContainer)
+
+	r := docker.NewRegistry(s.pool).
+		Add(mongoContainer).
+		Add(redisContainer)
+
+	err := r.StartAndWaitReady(ctx)
+	s.Require().NoError(err)
+
+	redisClientOptions := &redis.Options{Addr: container.RedisDSN(redisContainer)}
+	redisClient := redis.NewClient(redisClientOptions)
+	_, err = redisClient.Ping(ctx).Result()
+	s.Require().NoError(err)
+
+	clientOptions := options.Client().ApplyURI(container.MongoDSN(mongoContainer))
+	client, err := mongo.Connect(ctx, clientOptions)
+	s.Require().NoError(err)
+	err = client.Ping(ctx, nil)
 	s.Require().NoError(err)
 }
 

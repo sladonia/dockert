@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-redis/redis/v9"
 	"github.com/ory/dockertest/v3"
-	"github.com/sladonia/docker"
+	docker "github.com/sladonia/dockert"
 )
 
 const (

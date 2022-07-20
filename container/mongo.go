@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ory/dockertest/v3"
-	"github.com/sladonia/docker"
+	docker "github.com/sladonia/dockert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )

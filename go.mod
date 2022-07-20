@@ -1,4 +1,4 @@
-module github.com/sladonia/docker
+module github.com/sladonia/dockert
 
 go 1.18
 
