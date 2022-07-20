@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ory/dockertest/v3"
-	docker "github.com/sladonia/dockert"
+	"github.com/sladonia/dockert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -13,14 +13,14 @@ const (
 	PortMongo = "27017"
 )
 
-func NewMongo() docker.Container {
-	return docker.NewCommonContainer(
+func NewMongo() dockert.Container {
+	return dockert.NewCommonContainer(
 		&dockertest.RunOptions{
 			Name:       "mongo",
 			Repository: "mongo",
 			Tag:        "5.0",
 		},
-		docker.ReadinessCheckerFunc(func(ctx context.Context, c docker.Container) (bool, error) {
+		dockert.ReadinessCheckerFunc(func(ctx context.Context, c dockert.Container) (bool, error) {
 			clientOptions := options.Client().ApplyURI(MongoDSN(c))
 			client, err := mongo.Connect(ctx, clientOptions)
 			if err != nil {
@@ -37,6 +37,6 @@ func NewMongo() docker.Container {
 	)
 }
 
-func MongoDSN(c docker.Container) string {
+func MongoDSN(c dockert.Container) string {
 	return c.Address("mongodb", PortMongo)
 }

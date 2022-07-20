@@ -9,7 +9,7 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/nats-io/nats.go"
 	"github.com/ory/dockertest/v3"
-	docker "github.com/sladonia/dockert"
+	"github.com/sladonia/dockert"
 	"github.com/sladonia/dockert/container"
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -112,7 +112,7 @@ func (s *Suite) TestRegistry() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	r := docker.NewRegistry(s.pool).
+	r := dockert.NewRegistry(s.pool).
 		Add(container.NewMongo()).
 		Add(container.NewRedis()).
 		Add(container.NewNats())
@@ -159,7 +159,7 @@ func (s *Suite) TestWaitForAnother() {
 
 	mongoContainer = mongoContainer.DependsOn(redisContainer)
 
-	r := docker.NewRegistry(s.pool).
+	r := dockert.NewRegistry(s.pool).
 		Add(mongoContainer).
 		Add(redisContainer)
 

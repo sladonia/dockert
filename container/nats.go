@@ -5,22 +5,22 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/ory/dockertest/v3"
-	docker "github.com/sladonia/dockert"
+	"github.com/sladonia/dockert"
 )
 
 const (
 	PortNats = "4222"
 )
 
-func NewNats() docker.Container {
-	return docker.NewCommonContainer(
+func NewNats() dockert.Container {
+	return dockert.NewCommonContainer(
 		&dockertest.RunOptions{
 			Name:       "nats",
 			Repository: "nats",
 			Tag:        "2-alpine",
 			Cmd:        []string{"nats-server", "-js"},
 		},
-		docker.ReadinessCheckerFunc(func(ctx context.Context, c docker.Container) (bool, error) {
+		dockert.ReadinessCheckerFunc(func(ctx context.Context, c dockert.Container) (bool, error) {
 			conn, err := nats.Connect(NatsDSN(c))
 			if err != nil {
 				return false, nil
@@ -33,6 +33,6 @@ func NewNats() docker.Container {
 	)
 }
 
-func NatsDSN(c docker.Container) string {
+func NatsDSN(c dockert.Container) string {
 	return c.Address("nats", PortNats)
 }

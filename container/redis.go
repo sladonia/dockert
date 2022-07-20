@@ -6,21 +6,21 @@ import (
 
 	"github.com/go-redis/redis/v9"
 	"github.com/ory/dockertest/v3"
-	docker "github.com/sladonia/dockert"
+	"github.com/sladonia/dockert"
 )
 
 const (
 	PortRedis = "6379"
 )
 
-func NewRedis() docker.Container {
-	return docker.NewCommonContainer(
+func NewRedis() dockert.Container {
+	return dockert.NewCommonContainer(
 		&dockertest.RunOptions{
 			Name:       "redis",
 			Repository: "redis",
 			Tag:        "7-alpine",
 		},
-		docker.ReadinessCheckerFunc(func(ctx context.Context, c docker.Container) (bool, error) {
+		dockert.ReadinessCheckerFunc(func(ctx context.Context, c dockert.Container) (bool, error) {
 			clientOptions := &redis.Options{Addr: RedisDSN(c)}
 
 			client := redis.NewClient(clientOptions)
@@ -41,6 +41,6 @@ func NewRedis() docker.Container {
 	)
 }
 
-func RedisDSN(c docker.Container) string {
+func RedisDSN(c dockert.Container) string {
 	return c.Address("", PortRedis)
 }
