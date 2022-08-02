@@ -12,6 +12,7 @@ import (
 	"github.com/sladonia/dockert"
 	"github.com/sladonia/dockert/container"
 	"github.com/stretchr/testify/suite"
+	etcd "go.etcd.io/etcd/client/v3"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -103,6 +104,37 @@ func (s *Suite) TestNats() {
 
 	_, err = nats.Connect(dsn)
 	s.Require().NoError(err)
+
+	err = c.Stop()
+	s.Require().NoError(err)
+}
+
+func (s *Suite) TestEtcd() {
+	key := "msg"
+	value := "hello"
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	c := container.NewEtcd()
+
+	err := c.Start(ctx, s.pool)
+	s.Require().NoError(err)
+
+	client, err := etcd.New(etcd.Config{
+		Endpoints: []string{container.EtcdDSN(c)},
+	})
+	s.Require().NoError(err)
+
+	_, err = client.Put(ctx, key, value)
+	s.NoError(err)
+
+	resp, err := client.Get(ctx, key)
+	s.NoError(err)
+
+	s.Require().Len(resp.Kvs, 1)
+
+	s.Equal(value, string(resp.Kvs[0].Value))
 
 	err = c.Stop()
 	s.Require().NoError(err)
